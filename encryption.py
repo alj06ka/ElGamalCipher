@@ -2,6 +2,18 @@ import ElGamalCipher.primes as prime
 from random import randrange, choice
 
 DEFAULT_KEY_PATH = 'elgamal_key'
+DEBUG = True
+
+
+def debug_message(message):
+    """
+    Printing debug message if DEBUG mode is enabled
+    :param message:
+    :return:
+    """
+    if DEBUG:
+        print(f'[DEBUG] {message}')
+    return
 
 
 class ElGamal:
