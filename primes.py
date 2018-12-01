@@ -65,3 +65,15 @@ def is_prime(num):
 
     # If all else fails, call rabinMiller() to determine if num is a prime.
     return rabin_miller(num)
+
+
+def generate_large_prime(key_size=1024):
+    """
+    Generating large prime number with defined size of bits
+    :param key_size: size of number to generate (in bits)
+    :return: generated prime number
+    """
+    while True:
+        num = random.randrange(2**(key_size-1), 2**key_size)
+        if is_prime(num):
+            return num
