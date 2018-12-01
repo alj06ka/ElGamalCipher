@@ -87,3 +87,25 @@ class ElGamal:
         except FileNotFoundError:
             debug_message(f'Loading error! ({Exception})')
             return 0
+
+    def encrypt(self, input_file_name='', output_file_name=''):
+        """
+        Encrypts input_file_name file using ElGamal cipher
+        :param input_file_name: path to input file
+        :param output_file_name: path to output file
+        :return: 1 if success
+        """
+        assert input_file_name, "Input file wasn't selected!"
+        assert output_file_name, "Output file wasn't selected!"
+        alpha = pow(self.keys['public']['g'], self.keys['session'], self.keys['public']['p'])
+        try:
+            with open(output_file_name, 'wb') as f:
+                for _byte in open(input_file_name, 'rb').readline():
+                    beta = (self.keys['public']['g'] ** self.keys['session'])*_byte % self.keys['public']['p']
+                    f.write(alpha)
+                    f.write(beta)
+        except Exception:
+            debug_message(f"Error occurred while encrypting file ({Exception})")
+            raise AssertionError(f"File encrypting error! ({Exception})")
+
+        return 1
