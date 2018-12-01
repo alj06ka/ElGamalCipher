@@ -20,6 +20,7 @@ def debug_message(message):
 class ElGamal:
     def __init__(self, keys=None):
         self.keys = keys
+        self.is_keys_configured = False
 
     def set_keys(self, keys=None, key_size=1024):
         """
@@ -49,6 +50,7 @@ class ElGamal:
             prime_key = prime.generate_large_prime(randrange(2, key_size+1))
             self.keys['session'] = prime_key if (prime_key < p_num) and (prime.gcd(prime_key, p_num) == 1) else 0
 
+        self.is_keys_configured = True
         return self.keys
 
     def save_keys(self, save_path=DEFAULT_KEY_PATH):
