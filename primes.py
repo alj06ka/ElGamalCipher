@@ -77,3 +77,22 @@ def generate_large_prime(key_size=1024):
         num = random.randrange(2**(key_size-1), 2**key_size)
         if is_prime(num):
             return num
+
+
+def gcd(a, b):
+    """
+    Calculates greatest common divisor between a and b
+    :param a: value to find divisor
+    :param b: value to find divisor
+    :return: greatest common divisor between a and b
+    """
+    while b != 0:
+        a, b = b, a % b
+    return a
+
+
+
+
+if __name__ == '__main__':
+    print(generate_large_prime())
+    print(primitive_roots(13))
