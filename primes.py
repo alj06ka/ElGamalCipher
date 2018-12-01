@@ -91,6 +91,20 @@ def gcd(a, b):
     return a
 
 
+def primitive_roots(module):
+    """
+    Finding list of primitive roots of num_p
+    :param module: value to find primitive roots
+    :return: list of primitive roots
+    """
+    roots = []
+    required_set = set(num for num in range(1, module) if gcd(num, module) == 1)
+
+    for g in range(1, module):
+        actual_set = set(pow(g, powers) % module for powers in range(1, module))
+        if required_set == actual_set:
+            roots.append(g)
+    return roots
 
 
 if __name__ == '__main__':
