@@ -49,3 +49,41 @@ class ElGamal:
             self.keys['session'] = prime_key if (prime_key < p_num) and (prime.gcd(prime_key, p_num) == 1) else 0
 
         return self.keys
+
+    def save_keys(self, save_path=DEFAULT_KEY_PATH):
+        """
+        Saving encryption keys to file
+        :param save_path: path to save keys
+        :return: 1 if saving successful else 0
+        """
+        try:
+            with open(f'{save_path}/id_elgamal', 'w') as f:
+                f.write(self.keys['private'])
+            with open(f'{save_path}/id_elgamal.pub', 'w') as f:
+                f.write(self.keys['public']['p']+'\n')
+                f.write(self.keys['public']['g']+'\n')
+                f.write(self.keys['public']['y']+'\n')
+            debug_message('Saving complete!')
+            return 1
+        except Exception:
+            debug_message(f'Saving error! ({Exception})')
+            return 0
+
+    def load_keys(self, load_path=DEFAULT_KEY_PATH):
+        """
+        Loading keys from file
+        :param load_path: path that includes files with keys
+        :return: dict with keys if successful else 0
+        """
+        try:
+            with open(f'{load_path}/id_elgamal', 'r') as f:
+                f.read(self.keys['private'])
+            with open(f'{load_path}/id_elgamal.pub', 'r') as f:
+                self.keys['public']['p'] = f.readline()
+                self.keys['public']['g'] = f.readline()
+                self.keys['public']['y'] = f.readline()
+            debug_message('Loading successful!')
+            return self.keys
+        except FileNotFoundError:
+            debug_message(f'Loading error! ({Exception})')
+            return 0
