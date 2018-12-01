@@ -45,4 +45,23 @@ def rabin_miller(num):
     return True
 
 
+def is_prime(num):
+    """
+    Function of checking if number is prime. It's pre-checking function before
+    running Miller-Rabin's prime number checking algorithm
+    :param num: Number for prime checking
+    :return: True if number is prime, else False
+    """
+    if num < 2:
+        return False
 
+    low_primes = list(primes_sieve(1000))
+    if num in low_primes:
+        return True
+
+    for prime in low_primes:
+        if not (num % prime):
+            return False
+
+    # If all else fails, call rabinMiller() to determine if num is a prime.
+    return rabin_miller(num)
