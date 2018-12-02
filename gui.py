@@ -28,7 +28,7 @@ ERROR_COLOR = '#FC5753'
 
 # Other settings
 DEBUG = True
-KEY_SIZE = 6
+KEY_SIZE = 1024
 
 encryption = encrypt.ElGamal()
 
@@ -151,6 +151,11 @@ class CryptApp(tk.Tk):
         self.show_frame(MainPage)
 
     def show_frame(self, controller):
+        """
+        Loading initialized window
+        :param controller: Parent object to control system
+        :return: None
+        """
         frame = self.frames[controller]
         frame.tkraise()
 
@@ -238,9 +243,10 @@ class MainPage(ttk.Frame):
                                      command=lambda: controller.show_frame(SelectKeys))
         button_set_keys.grid(column=0, row=2, sticky='e w', pady=1)
         button_encrypt = ttk.Button(left_frame, style='dark.TButton', text='Encrypt',
-                                    command=lambda: self.encrypt_file(controller))
+                                    command=lambda: self.encrypt_file(controller, is_encrypt=True))
         button_encrypt.grid(column=0, row=3, sticky='e w', pady=1)
-        button_decrypt = ttk.Button(left_frame, style='dark.TButton', text='Decrypt')
+        button_decrypt = ttk.Button(left_frame, style='dark.TButton', text='Decrypt',
+                                    command=lambda: self.encrypt_file(controller, is_encrypt=False))
         button_decrypt.grid(column=0, row=4, sticky='e w', pady=1)
 
         # Right part info
@@ -368,12 +374,18 @@ class MainPage(ttk.Frame):
         else:
             return False
 
-    def encrypt_file(self, controller):
+    def encrypt_file(self, controller, is_encrypt=True):
         """
         Encrypting file if it's opened
         :return: none
         """
-        MSG_ENCRYPT = 'Encryption'
+        if is_encrypt:
+            make_encryption = encryption.encrypt_file
+            MSG_ENCRYPT = 'Encryption'
+        else:
+            MSG_ENCRYPT = 'Decryption'
+            make_encryption = encryption.decrypt_file
+
         if not self.input_file_name:
             popup_message(f'{MSG_ENCRYPT} failed! (File is not opened)', status=2)
             encrypt.debug_message('File is not opened!')
@@ -383,7 +395,7 @@ class MainPage(ttk.Frame):
         else:
             if self.save_file():
                 operation_time = time()
-                if encryption.encrypt_file(self.input_file_name, self.output_file_name):
+                if make_encryption(self.input_file_name, self.output_file_name):
                     operation_time = time() - operation_time
                     self.label_encrypt_status.configure(
                         text=f'{MSG_ENCRYPT} successful!', foreground=SUCCESS_COLOR)
@@ -652,20 +664,24 @@ Also you can keep all fields empty. They will be filled automatically.""")
         :return: None
         """
         if self.check_fields():
+            p = self.public_p_key.get()
+            g = self.public_g_key.get()
+            y = self.public_y_key.get()
+            x = self.private_x_key.get()
+            k = self.session_k_key.get()
             keys = {
                 'public': {
-                    'p': self.public_p_key.get() if self.public_p_key.get() else self.generate_p_key(),
-                    'g': self.public_g_key.get() if self.public_g_key.get() else self.generate_g_key()
+                    'p': p if encryption.check_p_key(p) else self.generate_p_key(),
+                    'g': g if encryption.check_g_key(g, p) else self.generate_g_key()
                 },
-                'private': self.private_x_key.get() if self.private_x_key.get() and 1 < self.private_x_key.get() < self.public_p_key.get() else self.generate_x_key(),
-                'session': self.session_k_key.get() if self.session_k_key.get() and primes.gcd(self.session_k_key.get(),
-                                                                                           self.public_p_key.get()) == 1 else self.generate_k_key()
+                'private': x if encryption.check_x_key(x, p) else self.generate_x_key(),
+                'session': k if encryption.check_k_key(k, p) else self.generate_k_key()
             }
-            if self.public_y_key.get() and self.public_y_key.get() == pow(self.public_g_key.get(), self.private_x_key.get(), self.public_p_key.get()):
-                keys['public']['y'] = self.public_y_key.get()
+            if y and encryption.check_y_key(y, p, g, x):
+                keys['public']['y'] = y
             else:
                 keys['public']['y'] = self.generate_y_key()
-            popup_message('Filling successful', status=0)
+            popup_message('Filled and checked successfully!', status=0)
             encryption.set_keys(keys)
         else:
             encryption.is_keys_configured = False
