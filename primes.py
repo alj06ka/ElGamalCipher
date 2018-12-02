@@ -95,7 +95,7 @@ def primitive_roots(p):
     """
     Finding list of primitive roots of num_p
     :param p: value to find primitive roots
-    :return: list of primitive roots
+    :return: random primitive root
     """
     if p == 2:
         return 1
@@ -115,5 +115,14 @@ def primitive_roots(p):
 
 
 if __name__ == '__main__':
+    # Test of generating prime numbers
     print(generate_large_prime())
     print(primitive_roots(generate_large_prime()))
+    primes_eratosphen = set(primes_sieve(100000))
+    primes_algo = set()
+    for num in range(2, 100000):
+        if is_prime(num):
+            primes_algo.add(num)
+    print('Eratosphen: ' + str(len(primes_eratosphen)))
+    print('Algorithm: ' + str(len(primes_algo)))
+    print(primes_algo-primes_eratosphen)
