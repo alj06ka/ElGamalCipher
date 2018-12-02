@@ -395,17 +395,23 @@ class MainPage(ttk.Frame):
         else:
             if self.save_file():
                 operation_time = time()
-                if make_encryption(self.input_file_name, self.output_file_name):
-                    operation_time = time() - operation_time
-                    self.label_encrypt_status.configure(
-                        text=f'{MSG_ENCRYPT} successful!', foreground=SUCCESS_COLOR)
-                    encrypt.debug_message(f'{MSG_ENCRYPT} successful! Total time: {operation_time}')
+                try:
+                    if make_encryption(self.input_file_name, self.output_file_name):
+                        operation_time = time() - operation_time
+                        self.label_encrypt_status.configure(
+                            text=f'{MSG_ENCRYPT} successful!', foreground=SUCCESS_COLOR)
+                        self.label_keys_status.configure(
+                            text=f'Total {MSG_ENCRYPT} time: {operation_time} c.',
+                            foreground=SUCCESS_COLOR)
+                        encrypt.debug_message(f'{MSG_ENCRYPT} successful! Total time: {operation_time}')
 
-                else:
-                    self.label_encrypt_status.configure(text=f'{MSG_ENCRYPT} failed!',
-                                                        foreground=ERROR_COLOR)
-                encrypt.debug_message('{} successful!'.format(MSG_ENCRYPT))
-                encrypt.debug_message('Saved as {}'.format(self.output_file_name.split('/')[-1]))
+                    else:
+                        self.label_encrypt_status.configure(text=f'{MSG_ENCRYPT} failed!',
+                                                            foreground=ERROR_COLOR)
+                    encrypt.debug_message('{} successful!'.format(MSG_ENCRYPT))
+                    encrypt.debug_message('Saved as {}'.format(self.output_file_name.split('/')[-1]))
+                except AssertionError:
+                    encrypt.debug_message(AssertionError)
             else:
                 self.label_keys_status.config(
                     text='{} failed! (File to save is not selected)'.format(MSG_ENCRYPT),
