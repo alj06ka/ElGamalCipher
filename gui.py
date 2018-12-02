@@ -1,7 +1,8 @@
 import tkinter as tk
-from tkinter import filedialog
-from tkinter import ttk
 from random import randrange
+from tkinter import ttk
+from tkinter import filedialog
+from time import time
 import ElGamalCipher.encryption as encrypt
 import ElGamalCipher.primes as primes
 
@@ -25,37 +26,47 @@ SUCCESS_COLOR = '#55C621'
 WARNING_COLOR = '#EFC61C'
 ERROR_COLOR = '#FC5753'
 
-
 # Other settings
 DEBUG = True
-KEY_SIZE = 1024
+KEY_SIZE = 6
 
 encryption = encrypt.ElGamal()
 
 
-def error_message(message, *args):
+def popup_message(message, status=1, **kwargs):
     """
     Initializing error message with close button and other buttons as args
     :param message: Text of message
-    :param args: dict with button_name: button_command
+    :param status: 0 is Success, 1 is warning, 2 is error
+    :param kwargs: dict with button_name: button_command
     :return:
     """
     window = tk.Tk()
     window.minsize(300, 200)
+    window.geometry('300x200+350+150')
     window.resizable(False, False)
+
+    # Generating header
     try:
-        header_message = ' '.join(message.split(' ')[:2])
+        if status == 1:
+            header_message = 'Warning: '
+        elif status == 2:
+            header_message = 'Error: '
+        else:
+            header_message = ''
+        header_message += ' '.join(message.split(' ')[:2])
     except IndexError:
         header_message = message
     window.title(header_message)
 
+    # Initializing styles
     style = ttk.Style(window)
     style.configure('TFrame',
                     background=BACKGROUND_COLOR_GRAY
                     )
     style.configure('TButton',
                     font=BUTTON_FONT_LIGHT,
-                    padding=8,
+                    padding=0,
                     relief='flat',
                     foreground=BUTTON_COLOR_LIGHT)
     style.map('TButton',
@@ -70,34 +81,49 @@ def error_message(message, *args):
     frame.grid_rowconfigure(0, weight=3)
     frame.grid_rowconfigure(1, weight=1)
 
+    # Initializing main message
     message_content = tk.Message(frame,
                                  text=message,
                                  background=BACKGROUND_COLOR_GRAY,
-                                 foreground=BUTTON_COLOR_LIGHT,
                                  font=LABEL_FONT,
                                  justify=tk.LEFT,
                                  width=300)
+    # Changing colors:
+    #   0 (success) is green,
+    #   1 (warning) is yellow,
+    #   2 (error) is red
+    if status == 0:
+        message_content.configure(foreground=SUCCESS_COLOR)
+    elif status == 1:
+        message_content.configure(foreground=WARNING_COLOR)
+    else:
+        message_content.configure(foreground=ERROR_COLOR)
+
     message_content.grid(column=0, row=0, sticky='n e s w')
+
     button_frame = ttk.Frame(frame, style='TFrame')
     button_frame.rowconfigure(0, weight=1)
+    button_frame.columnconfigure(0, weight=1)
+
+    # Initializing close button
     cancel_button = ttk.Button(button_frame,
                                text='Close',
                                style='TButton',
                                command=window.destroy)
     cancel_button.grid(column=0, row=0, padx=3, sticky='n e s w')
-    button_count = 1
-    print(args)
-    # Initializing other buttons if they are set
-    for name, action in args[0].items():
-        button_frame.rowconfigure(button_count, weight=1)
-        button = ttk.Button(button_frame,
-                            text=name,
-                            style='TButton',
-                            command=action)
-        button.grid(column=0, row=button_count, padx=3, sticky='n e s w')
-        button_count += 1
-    button_frame.grid(column=0, row=1, sticky='n e s w')
 
+    # Initializing other buttons if they are set
+    if kwargs:
+        button_count = 1
+        for name, action in kwargs.items():
+            button_frame.columnconfigure(button_count, weight=1)
+            button = ttk.Button(button_frame,
+                                text=name,
+                                style='TButton',
+                                command=action)
+            button.grid(column=button_count, row=0, padx=3, sticky='n e s w')
+            button_count += 1
+    button_frame.grid(column=0, row=1, sticky='n e s w', padx=2, pady=5)
 
 
 class CryptApp(tk.Tk):
@@ -121,6 +147,7 @@ class CryptApp(tk.Tk):
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky='nsew')
 
+        # After running program, MainPage window will be shown
         self.show_frame(MainPage)
 
     def show_frame(self, controller):
@@ -203,13 +230,15 @@ class MainPage(ttk.Frame):
         right_frame = ttk.Frame(self)
 
         # Left part navigation settings
-        label_header = ttk.Label(left_frame, style='Header.TLabel', text='ElGamal Cryptosystem').grid(column=0, row=0)
-        button_open_file = ttk.Button(left_frame, style='dark.TButton', text='Open file')
+        label_header = ttk.Label(left_frame, style='Header.TLabel', text='ElGamal Cryptosystem')
+        label_header.grid(column=0, row=0)
+        button_open_file = ttk.Button(left_frame, style='dark.TButton', text='Open file', command=self.open_file)
         button_open_file.grid(column=0, row=1, sticky='e w', pady=1)
         button_set_keys = ttk.Button(left_frame, style='dark.TButton', text='Set keys',
                                      command=lambda: controller.show_frame(SelectKeys))
         button_set_keys.grid(column=0, row=2, sticky='e w', pady=1)
-        button_encrypt = ttk.Button(left_frame, style='dark.TButton', text='Encrypt')
+        button_encrypt = ttk.Button(left_frame, style='dark.TButton', text='Encrypt',
+                                    command=lambda: self.encrypt_file(controller))
         button_encrypt.grid(column=0, row=3, sticky='e w', pady=1)
         button_decrypt = ttk.Button(left_frame, style='dark.TButton', text='Decrypt')
         button_decrypt.grid(column=0, row=4, sticky='e w', pady=1)
@@ -225,6 +254,7 @@ class MainPage(ttk.Frame):
         right_frame.rowconfigure(5, weight=0)
         right_frame.rowconfigure(6, weight=5)
 
+        # Initializing right side info
         label_file_status = ttk.Label(right_frame, style='info.TLabel', text='File status:')
         label_file_status.grid(column=0, row=1, sticky='n e s w', padx=30)
         label_public_key = ttk.Label(right_frame, style='info.TLabel', text='Public key:')
@@ -233,10 +263,8 @@ class MainPage(ttk.Frame):
         label_private_key.grid(column=0, row=3, sticky='n e s w', padx=30)
         label_session_key = ttk.Label(right_frame, style='info.TLabel', text='Session key:')
         label_session_key.grid(column=0, row=4, sticky='n e s w', padx=30)
-        label_keys_status = ttk.Label(right_frame,
-                                      style='warning.TLabel',
-                                      text='Public/private keys are not set. Please configure keys!')
-        label_keys_status.grid(column=0, columnspan=2, row=5, sticky='n e s w', padx=30)
+        self.label_keys_status = ttk.Label(right_frame)
+        self.label_keys_status.grid(column=0, columnspan=2, row=5, sticky='n e s w', padx=30)
         self.label_encrypt_status = ttk.Label(right_frame, style='status.TLabel')
         self.label_encrypt_status.grid(column=0, columnspan=2, row=6, sticky='n e s w')
 
@@ -258,9 +286,9 @@ class MainPage(ttk.Frame):
         self.label_p_public_value = ttk.Label(label_public_key_value, style='info_value.TLabel', text='')
         self.label_p_public_value.grid(column=1, row=0, sticky='n e s w')
         self.label_g_public_value = ttk.Label(label_public_key_value, style='info_value.TLabel')
-        self.label_g_public_value.grid(column=2, row=0, sticky='n e s w')
+        self.label_g_public_value.grid(column=1, row=1, sticky='n e s w')
         self.label_y_public_value = ttk.Label(label_public_key_value, style='info_value.TLabel')
-        self.label_y_public_value.grid(column=3, row=0, sticky='n e s w')
+        self.label_y_public_value.grid(column=1, row=2, sticky='n e s w')
 
         label_public_key_value.grid(column=1, row=2, sticky='n e s w')
 
@@ -275,6 +303,10 @@ class MainPage(ttk.Frame):
         self.check_keys_status()
 
     def check_file_status(self):
+        """
+        Updating file opened status
+        :return: None
+        """
         if self.input_file_name:
             self.label_file_status_value.configure(text=f"File opened: {self.input_file_name.split('/')[-1]}",
                                                    style='success.TLabel')
@@ -283,32 +315,109 @@ class MainPage(ttk.Frame):
                                                    style='warning_message.TLabel')
 
     def check_keys_status(self):
+        """
+        Updating keys info
+        :return: None
+        """
         if encryption.is_keys_configured:
-            self.label_p_public_value.configure(text=str(encryption.keys['public']['p'])[:50])
-            self.label_g_public_value.configure(text=str(encryption.keys['public']['g'])[:50])
-            self.label_y_public_value.configure(text=str(encryption.keys['public']['y'])[:50])
+            p_key = str(encryption.keys['public']['p'])[:30] + '...' \
+                if len(str(encryption.keys['public']['p'])) > 30 else str(encryption.keys['public']['p'])
+            self.label_p_public_value.configure(text=p_key)
+            g_key = str(encryption.keys['public']['g'])[:30] + '...' \
+                if len(str(encryption.keys['public']['g'])) > 30 else str(encryption.keys['public']['g'])
+            self.label_g_public_value.configure(text=g_key)
+            y_key = str(encryption.keys['public']['y'])[:30] + '...' \
+                if len(str(encryption.keys['public']['y'])) > 30 else str(encryption.keys['public']['y'])
+            self.label_y_public_value.configure(text=y_key)
             self.label_private_key_value.configure(text='set successful!', style='success.TLabel')
-            self.label_session_key_value.configure(text=str(encryption.keys['session'])[:50])
+            session_key = str(encryption.keys['session'])[:30] + '...' \
+                if len(str(encryption.keys['session'])) > 30 else str(encryption.keys['session'])
+            self.label_session_key_value.configure(text=session_key)
+            self.label_keys_status.config(style='success.TLabel',
+                                          text='Public/private keys have been set successful!')
         else:
             self.label_p_public_value.configure(text='')
             self.label_g_public_value.configure(text='')
             self.label_y_public_value.configure(text='')
             self.label_private_key_value.configure(text='not set!', style='warning_message.TLabel')
             self.label_session_key_value.configure(text='')
+            self.label_keys_status.config(style='warning.TLabel',
+                                          text='Public/private keys are not set. Please configure keys!')
+
+    def open_file(self):
+        """
+        Handling open file dialog
+        :return: None
+        """
+        self.input_file_name = filedialog.askopenfilename(title="Select file",
+                                                          filetypes=(("all files", "*.*"),))
+        if self.input_file_name:
+            short_file_name = self.input_file_name.split('/')[-1]
+            self.check_file_status()
+            encrypt.debug_message(f'File {short_file_name} opened successful!')
+
+    def save_file(self):
+        """
+        Handling saving file dialog
+        :return: None
+        """
+        self.output_file_name = filedialog.asksaveasfilename(title="Save file as...",
+                                                             filetypes=(("all files", "*.*"),))
+        if self.output_file_name:
+            return True
+        else:
+            return False
+
+    def encrypt_file(self, controller):
+        """
+        Encrypting file if it's opened
+        :return: none
+        """
+        MSG_ENCRYPT = 'Encryption'
+        if not self.input_file_name:
+            popup_message(f'{MSG_ENCRYPT} failed! (File is not opened)', status=2)
+            encrypt.debug_message('File is not opened!')
+        elif not encryption.is_keys_configured:
+            set_keys = {'Set keys': lambda: controller.show_frame(SelectKeys)}
+            popup_message(f'Keys are not configured correctly. Please, fix it!', status=2, **set_keys)
+        else:
+            if self.save_file():
+                operation_time = time()
+                if encryption.encrypt_file(self.input_file_name, self.output_file_name):
+                    operation_time = time() - operation_time
+                    self.label_encrypt_status.configure(
+                        text=f'{MSG_ENCRYPT} successful!', foreground=SUCCESS_COLOR)
+                    encrypt.debug_message(f'{MSG_ENCRYPT} successful! Total time: {operation_time}')
+
+                else:
+                    self.label_encrypt_status.configure(text=f'{MSG_ENCRYPT} failed!',
+                                                        foreground=ERROR_COLOR)
+                encrypt.debug_message('{} successful!'.format(MSG_ENCRYPT))
+                encrypt.debug_message('Saved as {}'.format(self.output_file_name.split('/')[-1]))
+            else:
+                self.label_keys_status.config(
+                    text='{} failed! (File to save is not selected)'.format(MSG_ENCRYPT),
+                    foreground=WARNING_COLOR)
+                encrypt.debug_message('File to save is not selected!')
 
 
 class SelectKeys(ttk.Frame):
+    """
+    Class for setting up public / private / session keys
+    """
     def __init__(self, parent, controller):
         ttk.Frame.__init__(self, parent)
         controller.geometry('900x650+100+0')
         style = ttk.Style()
         style.configure('TFrame', background=BACKGROUND_COLOR_GRAY)
 
+        # Main fields that includes public/ private keys
         self.public_p_key = tk.IntVar()
         self.public_g_key = tk.IntVar()
         self.public_y_key = tk.IntVar()
         self.private_x_key = tk.IntVar()
         self.session_k_key = tk.IntVar()
+
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
         self.columnconfigure(2, weight=1)
@@ -336,6 +445,7 @@ class SelectKeys(ttk.Frame):
         # handle buttons
         self.rowconfigure(10, weight=2)
 
+        # Initializing styles
         style.configure('h1.TLabel',
                         font=STATUS_FONT_LIGHT,
                         background=BACKGROUND_COLOR_GRAY,
@@ -377,6 +487,7 @@ class SelectKeys(ttk.Frame):
                               ('!active', BUTTON_COLOR_GRAY)],
                   relief=[('pressed', 'flat'), ('!disabled', 'flat')])
 
+        # Main interface configuring
         header_label = ttk.Label(self, style='h1.TLabel', text='Select keys')
         header_label.grid(column=0, columnspan=3, row=0, sticky='n e s w')
 
@@ -427,32 +538,137 @@ Also you can keep all fields empty. They will be filled automatically.""")
         footer_frame.rowconfigure(0, weight=1)
 
         cancel_button = ttk.Button(footer_frame, style='TButton', text='Close',
-                                   command=lambda: controller.show_frame(MainPage))
+                                   command=lambda: self.update_main(controller))
         cancel_button.grid(column=0, row=0, sticky='s w', padx=10, pady=10)
         open_button = ttk.Button(footer_frame, style='TButton', text='Open...')
         open_button.grid(column=1, row=0, sticky='e s', padx=10, pady=10)
-        fill_confirm_button = ttk.Button(footer_frame, style='TButton', text='Fill & Confirm')
+        fill_confirm_button = ttk.Button(footer_frame, style='TButton', text='Fill & Confirm',
+                                         command=self.fill_confirm_keys)
         fill_confirm_button.grid(column=2, row=0, sticky='e s', padx=10, pady=10)
         save_button = ttk.Button(footer_frame, style='TButton', text='Save as...')
         save_button.grid(column=3, row=0, sticky='e s', padx=10, pady=10)
 
         footer_frame.grid(column=0, columnspan=3, row=10, sticky='e s w')
 
+    @staticmethod
+    def update_main(controller):
+        """
+        Switching window to main and updating key info in main
+        :param controller: parent window to call MainPage
+        :return: None
+        """
+        MainPage.check_keys_status(controller.frames[MainPage])
+        controller.show_frame(MainPage)
+
     def generate_p_key(self):
+        """
+        Generating p key if it's not set
+        :return: p key value
+        """
         key = primes.generate_large_prime(key_size=KEY_SIZE)
         self.public_p_key.set(key)
         self.generate_g_key()
+        return key
 
     def generate_g_key(self):
-        self.public_g_key.set(primes.primitive_roots(self.public_p_key.get()))
+        """
+        Generating g key if it's not set
+        :return: g key value
+        """
+        key = primes.primitive_roots(self.public_p_key.get())
+        self.public_g_key.set(key)
+        return key
 
     def generate_k_key(self):
+        """
+        Generating session k key if it's not set and if p key is set
+        :return: session k key value
+        """
         p = self.public_p_key.get()
-        while True:
-            key = randrange(1, p-1)
-            if primes.gcd(key, p) == 1:
-                self.session_k_key.set(key)
-                return
+        if p:
+            while True:
+                key = randrange(1, p - 1)
+                if primes.gcd(key, p) == 1:
+                    self.session_k_key.set(key)
+                    return key
+        else:
+            generate_button = {'Generate': self.generate_p_key}
+            popup_message('P key must be set!', status=2, **generate_button)
+
+    def generate_y_key(self):
+        """
+        Generating public y key if public p and private x keys are set
+        :return: public y key
+        """
+        if self.public_p_key.get() and self.private_x_key.get() and self.public_p_key.get():
+            key = pow(self.public_g_key.get(), self.private_x_key.get(), self.public_p_key.get())
+            self.public_y_key.set(key)
+            return key
+
+    def generate_x_key(self):
+        """
+        Generating private x key if p key is set
+        :return:
+        """
+        if self.public_p_key.get():
+            key = randrange(2, self.public_p_key.get() - 1)
+            self.private_x_key.set(key)
+            return key
+
+    def check_fields(self):
+        """
+        Checking all fields if they are correct
+        :return: True if fields are correct, else False
+        """
+        error_fields = []
+        try:
+            self.public_p_key.get()
+        except Exception:
+            error_fields.append('P')
+        try:
+            self.public_g_key.get()
+        except Exception:
+            error_fields.append('G')
+        try:
+            self.public_y_key.get()
+        except Exception:
+            error_fields.append('Y')
+        try:
+            self.private_x_key.get()
+        except Exception:
+            error_fields.append('X')
+        try:
+            self.session_k_key.get()
+        except Exception:
+            error_fields.append('K')
+        if error_fields:
+            popup_message(', '.join(error_fields) + ' fields are incorrect. Please, fix them')
+            return False
+        return True
+
+    def fill_confirm_keys(self):
+        """
+        If all fields are correct, key will be applied successfully
+        :return: None
+        """
+        if self.check_fields():
+            keys = {
+                'public': {
+                    'p': self.public_p_key.get() if self.public_p_key.get() else self.generate_p_key(),
+                    'g': self.public_g_key.get() if self.public_g_key.get() else self.generate_g_key()
+                },
+                'private': self.private_x_key.get() if self.private_x_key.get() and 1 < self.private_x_key.get() < self.public_p_key.get() else self.generate_x_key(),
+                'session': self.session_k_key.get() if self.session_k_key.get() and primes.gcd(self.session_k_key.get(),
+                                                                                           self.public_p_key.get()) == 1 else self.generate_k_key()
+            }
+            if self.public_y_key.get() and self.public_y_key.get() == pow(self.public_g_key.get(), self.private_x_key.get(), self.public_p_key.get()):
+                keys['public']['y'] = self.public_y_key.get()
+            else:
+                keys['public']['y'] = self.generate_y_key()
+            popup_message('Filling successful', status=0)
+            encryption.set_keys(keys)
+        else:
+            encryption.is_keys_configured = False
 
 
 app = CryptApp()
