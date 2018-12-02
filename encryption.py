@@ -1,5 +1,4 @@
-import ElGamalCipher.primes as prime
-from random import randrange, choice
+import ElGamalCipher.primes as primes
 from os.path import isfile
 
 DEFAULT_KEY_PATH = 'elgamal_key'
@@ -70,6 +69,31 @@ class ElGamal:
             debug_message(f'Loading error! ({Exception})')
             return 0
 
+    @staticmethod
+    def _open_file_binary(filename):
+        """
+        Reading file byte to byte
+        :param filename: path to file to read
+        :return: generator of file bytes as integer values
+        """
+        for _byte in open(filename, 'rb').read():
+            yield _byte
+
+    @staticmethod
+    def _open_file_longint(filename):
+        """
+        Reading long integer bytes from file
+        :param filename:
+        :return:
+        """
+        for num in open(filename, 'r').readlines():
+            yield int(num)
+
+    def encrypt_byte(self, _byte):
+        beta = (pow(self.keys['public']['y'], self.keys['session'], self.keys['public']['p'])
+                * (_byte % self.keys['public']['p'])) % self.keys['public']['p']
+        return beta
+
     def encrypt_file(self, input_file_name='', output_file_name=''):
         """
         Encrypts input_file_name file using ElGamal cipher
@@ -84,21 +108,19 @@ class ElGamal:
         # Encrypting file and saving result
         alpha = pow(self.keys['public']['g'], self.keys['session'], self.keys['public']['p'])
         try:
-            with open(output_file_name, 'wb') as f:
-                for _byte in open(input_file_name, 'rb').readline():
-                    beta = (pow(self.keys['public']['y'], self.keys['session'], self.keys['public']['p'])
-                            * (_byte % self.keys['public']['p'])) % self.keys['public']['p']
-                    print(alpha)
-                    print(beta)
-                    f.write(alpha)
-                    f.write(beta)
+            debug_message('Encrypting...')
+            with open(output_file_name, 'w') as f:
+                for _byte in self._open_file_binary(input_file_name):
+                    beta = self.encrypt_byte(_byte)
+                    f.write(str(alpha)+'\n')
+                    f.write(str(beta)+'\n')
         except Exception:
             debug_message(f"Error occurred while encrypting file ({Exception})")
             raise AssertionError(f"File encrypting error! ({Exception})")
 
         return 1
 
-    def decrypt(self, input_file_name='', output_file_name=''):
+    def decrypt_file(self, input_file_name='', output_file_name=''):
         """
         Decrypts file using ElGamal cipher
         :param input_file_name: path to input file
@@ -106,28 +128,23 @@ class ElGamal:
         :return: 1 if successful
         """
 
-        def _open_file_binary(filename):
-            """
-            Reading file byte to byte
-            :param filename: path to file to read
-            :return: generator of file bytes as integer values
-            """
-            for _byte in open(filename, 'rb').read():
-                yield _byte
-
         # Checking if input and output files selected right
         assert input_file_name and isfile(input_file_name), "Input file wasn't selected!"
         assert output_file_name, "Output file wasn't selected!"
         with open(output_file_name, 'wb') as output_file:
             # To iterate file as int values, I'm using generator
-            input_file = _open_file_binary(input_file_name)
+            input_file = self._open_file_longint(input_file_name)
             try:
                 alpha = input_file.__next__()
                 beta = input_file.__next__()
             except StopIteration:
                 raise AssertionError("Input file is empty! Nothing to decrypt.")
+
+            x = self.keys['private']
+            p = self.keys['public']['p']
+
             while alpha and beta:
-                message_byte = (beta * (alpha ** self.keys['private'])**(-1)) % self.keys['public']['p']
+                message_byte = bytes(chr((beta % p * (pow(alpha, (p-1-x), p))) % p), "ascii")
                 output_file.write(message_byte)
                 try:
                     alpha = input_file.__next__()
@@ -136,3 +153,39 @@ class ElGamal:
                     alpha = 0
                     beta = 0
         return 1
+
+    @staticmethod
+    def check_p_key(p_key):
+        if p_key and p_key > 256:
+            return True
+        return False
+
+    @staticmethod
+    def check_g_key(g_key, p_key):
+        if g_key and p_key:
+            p1 = 2
+            p2 = (p_key - 1) // p1
+            # g is a primitive root if for all prime factors of p-1, p[i]
+            # g^((p-1)/p[i]) (mod p) is not equal to 1
+            if not (pow(g_key, (p_key - 1) // p1, p_key) == 1):
+                if not pow(g_key, (p_key - 1) // p2, p_key) == 1:
+                    return True
+        return False
+
+    @staticmethod
+    def check_y_key(y_key, p_key, g_key, x_key):
+        if y_key == pow(g_key, x_key, p_key):
+            return True
+        return False
+
+    @staticmethod
+    def check_x_key(x_key, p_key):
+        if 2 < x_key < p_key-1:
+            return True
+        return False
+
+    @staticmethod
+    def check_k_key(k_key, p_key):
+        if (1 < k_key < p_key) and (primes.gcd(k_key, p_key) == 1):
+            return True
+        return False
