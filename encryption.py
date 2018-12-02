@@ -90,6 +90,11 @@ class ElGamal:
             yield int(num)
 
     def encrypt_byte(self, _byte):
+        """
+        Encrypts 1 byte of input file
+        :param _byte: byte to encrypt
+        :return: encrypted byte
+        """
         beta = (pow(self.keys['public']['y'], self.keys['session'], self.keys['public']['p'])
                 * (_byte % self.keys['public']['p'])) % self.keys['public']['p']
         return beta
@@ -131,6 +136,7 @@ class ElGamal:
         # Checking if input and output files selected right
         assert input_file_name and isfile(input_file_name), "Input file wasn't selected!"
         assert output_file_name, "Output file wasn't selected!"
+
         with open(output_file_name, 'wb') as output_file:
             # To iterate file as int values, I'm using generator
             input_file = self._open_file_longint(input_file_name)
