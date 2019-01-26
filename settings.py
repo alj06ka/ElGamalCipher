@@ -21,3 +21,4 @@ ERROR_COLOR = '#FC5753'
 # Other settings
 DEBUG = True
 KEY_SIZE = 1024
+DEFAULT_KEY_PATH = 'elgamal_key'

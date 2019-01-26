@@ -1,9 +1,7 @@
 from os.path import isfile
 
 import ElGamalCipher.primes as primes
-
-DEFAULT_KEY_PATH = 'elgamal_key'
-DEBUG = True
+from ElGamalCipher.settings import DEFAULT_KEY_PATH, DEBUG
 
 
 def debug_message(message):
