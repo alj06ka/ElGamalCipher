@@ -1,34 +1,12 @@
 import tkinter as tk
 from random import randrange
-from tkinter import ttk
-from tkinter import filedialog
 from time import time
+from tkinter import filedialog
+from tkinter import ttk
+
 import ElGamalCipher.encryption as encrypt
 import ElGamalCipher.primes as primes
-
-# Constant colors and fonts using in this GUI
-HEADER_FONT = ('Open Sans', 17)
-BUTTON_FONT_LIGHT = ('Open Sans light', 13)
-LABEL_FONT = ('Open Sans', 13)
-LABEL_FONT_INFO = ('Open Sans light', 13)
-LABEL_FONT_SMALL = ('Open Sans', 11)
-ENTRY_FONT = ('Open Sans', 10)
-STATUS_FONT = ('Open Sans Bold', 20)
-STATUS_FONT_LIGHT = ('Open Sans Light', 20)
-
-BACKGROUND_COLOR_GRAY = '#434343'
-BACKGROUND_COLOR_GRAY_DARKER = '#333333'
-BUTTON_COLOR_GRAY = '#373739'
-BUTTON_COLOR_GRAY_ACTIVE = '#353535'
-BUTTON_COLOR_GRAY_PRESSED = '#313131'
-BUTTON_COLOR_LIGHT = '#F4F4F4'
-SUCCESS_COLOR = '#55C621'
-WARNING_COLOR = '#EFC61C'
-ERROR_COLOR = '#FC5753'
-
-# Other settings
-DEBUG = True
-KEY_SIZE = 1024
+from ElGamalCipher.settings import *
 
 encryption = encrypt.ElGamal()
 
@@ -131,6 +109,9 @@ class CryptApp(tk.Tk):
         Main class for initializing multiple windows and handle it.
     """
 
+    input_file_name = ''
+    output_file_name = ''
+
     def __init__(self):
         tk.Tk.__init__(self)
         self.minsize(800, 500)
@@ -142,7 +123,7 @@ class CryptApp(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = dict()
-        for F in (MainPage, SelectKeys):
+        for F in (MainPage, SelectKeys, ShowFile):
             frame = F(container, self)
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky='nsew')
@@ -169,8 +150,6 @@ class MainPage(ttk.Frame):
 
     def __init__(self, parent, controller):
 
-        self.input_file_name = ''
-        self.output_file_name = ''
         controller.geometry('900x500+100+100')
         ttk.Frame.__init__(self, parent)
         style = ttk.Style()
@@ -229,7 +208,8 @@ class MainPage(ttk.Frame):
         left_frame.rowconfigure(2, weight=0)
         left_frame.rowconfigure(3, weight=0)
         left_frame.rowconfigure(4, weight=0)
-        left_frame.rowconfigure(5, weight=1)
+        left_frame.rowconfigure(5, weight=0)
+        left_frame.rowconfigure(6, weight=1)
 
         left_frame.columnconfigure(0, weight=1)
         right_frame = ttk.Frame(self)
@@ -248,6 +228,9 @@ class MainPage(ttk.Frame):
         button_decrypt = ttk.Button(left_frame, style='dark.TButton', text='Decrypt',
                                     command=lambda: self.encrypt_file(controller, is_encrypt=False))
         button_decrypt.grid(column=0, row=4, sticky='e w', pady=1)
+        button_show_file = ttk.Button(left_frame, style='dark.TButton', text='Show file bytes',
+                                      command=lambda: controller.show_frame(ShowFile))
+        button_show_file.grid(column=0, row=5, sticky='e w', pady=1)
 
         # Right part info
         right_frame.columnconfigure(0, weight=1)
@@ -313,8 +296,8 @@ class MainPage(ttk.Frame):
         Updating file opened status
         :return: None
         """
-        if self.input_file_name:
-            self.label_file_status_value.configure(text=f"File opened: {self.input_file_name.split('/')[-1]}",
+        if CryptApp.input_file_name:
+            self.label_file_status_value.configure(text=f"File opened: {CryptApp.input_file_name.split('/')[-1]}",
                                                    style='success.TLabel')
         else:
             self.label_file_status_value.configure(text=f"File is not opened!",
@@ -355,10 +338,10 @@ class MainPage(ttk.Frame):
         Handling open file dialog
         :return: None
         """
-        self.input_file_name = filedialog.askopenfilename(title="Select file",
-                                                          filetypes=(("all files", "*.*"),))
-        if self.input_file_name:
-            short_file_name = self.input_file_name.split('/')[-1]
+        CryptApp.input_file_name = filedialog.askopenfilename(title="Select file",
+                                                              filetypes=(("all files", "*.*"),))
+        if CryptApp.input_file_name:
+            short_file_name = CryptApp.input_file_name.split('/')[-1]
             self.check_file_status()
             encrypt.debug_message(f'File {short_file_name} opened successful!')
 
@@ -386,7 +369,7 @@ class MainPage(ttk.Frame):
             MSG_ENCRYPT = 'Decryption'
             make_encryption = encryption.decrypt_file
 
-        if not self.input_file_name:
+        if not CryptApp.input_file_name:
             popup_message(f'{MSG_ENCRYPT} failed! (File is not opened)', status=2)
             encrypt.debug_message('File is not opened!')
         elif not encryption.is_keys_configured:
@@ -396,7 +379,7 @@ class MainPage(ttk.Frame):
             if self.save_file():
                 operation_time = time()
                 try:
-                    if make_encryption(self.input_file_name, self.output_file_name):
+                    if make_encryption(CryptApp.input_file_name, self.output_file_name):
                         operation_time = time() - operation_time
                         self.label_encrypt_status.configure(
                             text=f'{MSG_ENCRYPT} successful!', foreground=SUCCESS_COLOR)
@@ -423,6 +406,7 @@ class SelectKeys(ttk.Frame):
     """
     Class for setting up public / private / session keys
     """
+
     def __init__(self, parent, controller):
         ttk.Frame.__init__(self, parent)
         controller.geometry('900x650+100+0')
@@ -558,14 +542,9 @@ Also you can keep all fields empty. They will be filled automatically.""")
         cancel_button = ttk.Button(footer_frame, style='TButton', text='Close',
                                    command=lambda: self.update_main(controller))
         cancel_button.grid(column=0, row=0, sticky='s w', padx=10, pady=10)
-        open_button = ttk.Button(footer_frame, style='TButton', text='Open...')
-        open_button.grid(column=1, row=0, sticky='e s', padx=10, pady=10)
         fill_confirm_button = ttk.Button(footer_frame, style='TButton', text='Fill & Confirm',
                                          command=self.fill_confirm_keys)
         fill_confirm_button.grid(column=2, row=0, sticky='e s', padx=10, pady=10)
-        save_button = ttk.Button(footer_frame, style='TButton', text='Save as...')
-        save_button.grid(column=3, row=0, sticky='e s', padx=10, pady=10)
-
         footer_frame.grid(column=0, columnspan=3, row=10, sticky='e s w')
 
     @staticmethod
@@ -691,6 +670,106 @@ Also you can keep all fields empty. They will be filled automatically.""")
             encryption.set_keys(keys)
         else:
             encryption.is_keys_configured = False
+
+
+class ShowFile(ttk.Frame):
+    def __init__(self, parent, controller):
+        controller.geometry('900x500+100+100')
+        ttk.Frame.__init__(self, parent)
+        style = ttk.Style()
+        style.configure('TFrame', background=BACKGROUND_COLOR_GRAY)
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=5)
+        self.rowconfigure(0, weight=1)
+
+        # Initializing styles
+        style.configure('info.TLabel',
+                        font=LABEL_FONT_INFO,
+                        background=BACKGROUND_COLOR_GRAY,
+                        foreground=BUTTON_COLOR_LIGHT)
+        style.configure('warning.TLabel',
+                        font=LABEL_FONT_SMALL,
+                        background=BACKGROUND_COLOR_GRAY,
+                        foreground=WARNING_COLOR)
+        style.configure('info_value.TLabel',
+                        font=LABEL_FONT,
+                        background=BACKGROUND_COLOR_GRAY,
+                        foreground=BUTTON_COLOR_LIGHT)
+        style.configure('status.TLabel',
+                        font=STATUS_FONT,
+                        background=BACKGROUND_COLOR_GRAY,
+                        foreground=SUCCESS_COLOR,
+                        anchor=tk.CENTER)
+        style.configure('dark.TButton',
+                        font=BUTTON_FONT_LIGHT,
+                        padding=8,
+                        relief='flat',
+                        foreground=BUTTON_COLOR_LIGHT)
+        style.configure('success.TLabel',
+                        font=LABEL_FONT,
+                        background=BACKGROUND_COLOR_GRAY,
+                        foreground=SUCCESS_COLOR)
+        style.configure('warning_message.TLabel',
+                        font=LABEL_FONT,
+                        background=BACKGROUND_COLOR_GRAY,
+                        foreground=WARNING_COLOR)
+        style.map('dark.TButton',
+                  background=[('pressed', BUTTON_COLOR_GRAY_PRESSED),
+                              ('active', BUTTON_COLOR_GRAY_ACTIVE),
+                              ('!active', BUTTON_COLOR_GRAY)],
+                  relief=[('pressed', 'flat'), ('!disabled', 'flat')])
+        style.configure('Header.TLabel',
+                        font=HEADER_FONT,
+                        background=BACKGROUND_COLOR_GRAY_DARKER,
+                        foreground=BUTTON_COLOR_LIGHT
+                        )
+        style.configure('navigate.TFrame',
+                        background=BACKGROUND_COLOR_GRAY_DARKER)
+
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.rowconfigure(1, weight=10)
+        self.rowconfigure(2, weight=1)
+
+        input_label = ttk.Label(self, text='Input file bytes', style='info.TLabel').grid(column=0, row=0,
+                                                                                         sticky='n w', padx=10)
+        output_label = ttk.Label(self, text='Output ciphertext', style='info.TLabel').grid(column=1, row=0,
+                                                                                           sticky='n w', padx=10)
+        input_file_frame = ttk.Frame(self)
+
+        input_scroll = ttk.Scrollbar(input_file_frame, orient='vertical')
+        input_scroll.pack(side='right', fill='y')
+        self.input_file_bytes = tk.Text(input_file_frame,
+                                        font=ENTRY_FONT,
+                                        background=BUTTON_COLOR_LIGHT,
+                                        foreground=BACKGROUND_COLOR_GRAY,
+                                        relief='flat')
+        self.input_file_bytes.pack(fill='both')
+        input_file_frame.grid(padx=10, pady=10, column=0, row=1, sticky='n w e s')
+
+        input_scroll.config(command=self.input_file_bytes.yview)
+        self.input_file_bytes.config(yscrollcommand=input_scroll.set)
+
+        output_file_frame = ttk.Frame(self)
+
+        output_scroll = ttk.Scrollbar(output_file_frame, orient='vertical')
+        output_scroll.pack(side='right', fill='y')
+        self.output_file_bytes = tk.Text(output_file_frame,
+                                         font=ENTRY_FONT,
+                                         background=BUTTON_COLOR_LIGHT,
+                                         foreground=BACKGROUND_COLOR_GRAY,
+                                         relief='flat')
+        self.output_file_bytes.pack(fill='both')
+        output_file_frame.grid(padx=10, pady=10, column=1, row=1, sticky='n w e s')
+
+        output_scroll.config(command=self.output_file_bytes.yview)
+        self.output_file_bytes.config(yscrollcommand=output_scroll.set)
+        button_bar = ttk.Frame(self)
+        back_button = ttk.Button(button_bar, style='dark.TButton', text='Back',
+                                 command=lambda: controller.show_frame(MainPage))
+        back_button.grid(column=0, row=0, padx=10, pady=5, sticky='n w')
+        button_bar.grid(column=0, columnspan=2, row=2, sticky='n e s w')
 
 
 app = CryptApp()
