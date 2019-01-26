@@ -1,5 +1,6 @@
-import ElGamalCipher.primes as primes
 from os.path import isfile
+
+import ElGamalCipher.primes as primes
 
 DEFAULT_KEY_PATH = 'elgamal_key'
 DEBUG = True
@@ -41,9 +42,9 @@ class ElGamal:
             with open(f'{save_path}/id_elgamal', 'w') as f:
                 f.write(self.keys['private'])
             with open(f'{save_path}/id_elgamal.pub', 'w') as f:
-                f.write(self.keys['public']['p']+'\n')
-                f.write(self.keys['public']['g']+'\n')
-                f.write(self.keys['public']['y']+'\n')
+                f.write(self.keys['public']['p'] + '\n')
+                f.write(self.keys['public']['g'] + '\n')
+                f.write(self.keys['public']['y'] + '\n')
             debug_message('Saving complete!')
             return 1
         except Exception:
@@ -66,7 +67,7 @@ class ElGamal:
             debug_message('Loading successful!')
             return self.keys
         except FileNotFoundError:
-            debug_message(f'Loading error! ({Exception})')
+            debug_message(f'Loading error! ({FileNotFoundError})')
             return 0
 
     @staticmethod
@@ -117,8 +118,8 @@ class ElGamal:
             with open(output_file_name, 'w') as f:
                 for _byte in self._open_file_binary(input_file_name):
                     beta = self.encrypt_byte(_byte)
-                    f.write(str(alpha)+'\n')
-                    f.write(str(beta)+'\n')
+                    f.write(str(alpha) + '\n')
+                    f.write(str(beta) + '\n')
         except Exception:
             debug_message(f"Error occurred while encrypting file ({Exception})")
             raise AssertionError(f"File encrypting error! ({Exception})")
@@ -150,7 +151,7 @@ class ElGamal:
             p = self.keys['public']['p']
 
             while alpha and beta:
-                message_byte = bytes(chr((beta % p * (pow(alpha, (p-1-x), p))) % p), "ascii")
+                message_byte = bytes(chr((beta % p * (pow(alpha, (p - 1 - x), p))) % p), "ascii")
                 output_file.write(message_byte)
                 try:
                     alpha = input_file.__next__()
@@ -186,7 +187,7 @@ class ElGamal:
 
     @staticmethod
     def check_x_key(x_key, p_key):
-        if 2 < x_key < p_key-1:
+        if 2 < x_key < p_key - 1:
             return True
         return False
 

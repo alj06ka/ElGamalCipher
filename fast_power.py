@@ -1,3 +1,15 @@
+"""
+Unit for implementing fast power algorithms and testing them.
+Two fast power algorithms were implemented and tested using different inputs
+
+Result: built in power function is faster than this algorithms,
+        but recursively it works faster.
+
+Top 3 fast power algorithms:
+    1. Built-in power()
+    2. fast_power_recursive()
+    3. fast_power
+"""
 from time import time
 
 
@@ -19,7 +31,7 @@ def fast_power_recur(base, power):
     if power == -1:
         return 1. / base
     if power % 2 == 1:
-        return fast_power_recur(base, power - 1)* base
+        return fast_power_recur(base, power - 1) * base
     else:
         result = fast_power_recur(base, power / 2)
         return result * result
@@ -27,15 +39,17 @@ def fast_power_recur(base, power):
 
 if __name__ == '__main__':
     """
-    Unit for testing speed between different power calculating algorithms
-    Comparing:
-        - Included python algorithm
-        - Fast power non-recursive algorithm
-        - Fast power recursive algorithm
-    Result:
-        Python algorithm is the fastest
+    Testing this 3 algorithms
     """
+
+
     def lines(func):
+        """
+        Decorator for output result separated by lines
+        :param func: function to implement
+        :return:
+        """
+
         def wrapper(*args, **kwargs):
             print('-------------------------')
             func(*args, **kwargs)
@@ -45,6 +59,12 @@ if __name__ == '__main__':
 
 
     def catch_time(func):
+        """
+        Counting time function
+        :param func: function to implement
+        :return: dictionary, that includes time of implementation and function result
+        """
+
         def wrapper(*args, **kwargs):
             _time = time()
             funciton_result = func(*args, **kwargs)
@@ -92,6 +112,7 @@ if __name__ == '__main__':
             print('Fast power is the fastest')
         else:
             print('Fast power (recursive) is the fastest')
+
 
     print('Fast power testing:')
     print('Test 1')
