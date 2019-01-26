@@ -13,7 +13,10 @@ All you need to try this out is just clone repository to your PC and run `gui.py
   * Tkinter
 
 ## Screenshots
-
+![Main window](https://github.com/alj06ka/ElGamalCipher/blob/master/Screenshots/Main_window.png)
+![Setting key](https://github.com/alj06ka/ElGamalCipher/blob/master/Screenshots/Select_keys.png)
+![Setting key](https://github.com/alj06ka/ElGamalCipher/blob/master/Screenshots/Select_keys_2.png)
+![Main window](https://github.com/alj06ka/ElGamalCipher/blob/master/Screenshots/Main_window_2.png)
 
 ## Author
 
