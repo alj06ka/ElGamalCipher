@@ -1,18 +1,8 @@
 from os.path import isfile
 
 import ElGamalCipher.primes as primes
-from ElGamalCipher.settings import DEFAULT_KEY_PATH, DEBUG
-
-
-def debug_message(message):
-    """
-    Printing debug message if DEBUG mode is enabled
-    :param message:
-    :return:
-    """
-    if DEBUG:
-        print(f'[DEBUG] {message}')
-    return
+from ElGamalCipher.settings import DEFAULT_KEY_PATH
+from ElGamalCipher.core import debug_message
 
 
 class ElGamal:

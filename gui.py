@@ -7,6 +7,7 @@ from tkinter import ttk
 import ElGamalCipher.encryption as encrypt
 import ElGamalCipher.primes as primes
 from ElGamalCipher.settings import *
+from ElGamalCipher.core import debug_message
 
 encryption = encrypt.ElGamal()
 
@@ -343,7 +344,7 @@ class MainPage(ttk.Frame):
         if CryptApp.input_file_name:
             short_file_name = CryptApp.input_file_name.split('/')[-1]
             self.check_file_status()
-            encrypt.debug_message(f'File {short_file_name} opened successful!')
+            debug_message(f'File {short_file_name} opened successful!')
 
     def save_file(self):
         """
@@ -371,7 +372,7 @@ class MainPage(ttk.Frame):
 
         if not CryptApp.input_file_name:
             popup_message(f'{MSG_ENCRYPT} failed! (File is not opened)', status=2)
-            encrypt.debug_message('File is not opened!')
+            debug_message('File is not opened!')
         elif not encryption.is_keys_configured:
             set_keys = {'Set keys': lambda: controller.show_frame(SelectKeys)}
             popup_message(f'Keys are not configured correctly. Please, fix it!', status=2, **set_keys)
@@ -386,20 +387,20 @@ class MainPage(ttk.Frame):
                         self.label_keys_status.configure(
                             text=f'Total {MSG_ENCRYPT} time: {operation_time} c.',
                             foreground=SUCCESS_COLOR)
-                        encrypt.debug_message(f'{MSG_ENCRYPT} successful! Total time: {operation_time}')
+                        debug_message(f'{MSG_ENCRYPT} successful! Total time: {operation_time}')
 
                     else:
                         self.label_encrypt_status.configure(text=f'{MSG_ENCRYPT} failed!',
                                                             foreground=ERROR_COLOR)
-                    encrypt.debug_message('{} successful!'.format(MSG_ENCRYPT))
-                    encrypt.debug_message('Saved as {}'.format(self.output_file_name.split('/')[-1]))
+                    debug_message('{} successful!'.format(MSG_ENCRYPT))
+                    debug_message('Saved as {}'.format(self.output_file_name.split('/')[-1]))
                 except AssertionError:
-                    encrypt.debug_message(AssertionError)
+                    debug_message(AssertionError)
             else:
                 self.label_keys_status.config(
                     text='{} failed! (File to save is not selected)'.format(MSG_ENCRYPT),
                     foreground=WARNING_COLOR)
-                encrypt.debug_message('File to save is not selected!')
+                debug_message('File to save is not selected!')
 
 
 class SelectKeys(ttk.Frame):
